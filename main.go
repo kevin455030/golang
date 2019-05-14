@@ -9,10 +9,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
-type WetherJson struct {
+type WeatherJson struct {
+	//json檔結構
 	Success string `json:"success"`
 	Result  struct {
 		ResourceID string `json:"resource_id"`
@@ -65,8 +65,9 @@ func OutputHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 		}
+		//天氣api
 		apiUrl := "https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001"
-		token := "CWB-95C28952-5740-4990-A976-0E14F972C8F2"
+		token := "your_token"
 		elements := map[string]string{
 			"locationName": r.FormValue("city"),
 			"format":       "JSON",
@@ -76,20 +77,19 @@ func OutputHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		defer res.Body.Close()
-		sitemap, err := ioutil.ReadAll(res.Body)
+		jsonData, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
-		// fmt.Printf("%s", sitemap)
-		WetherJson := WetherJson{}
-		json.Unmarshal([]byte(sitemap), &WetherJson)
 
-		//Time[Wx,PoP,MinT,Ci,MaxT]
-		wetherResult := WetherJson.Records.Location[0].WeatherElement[0].Time[0].Parameter.ParameterName
-		popResult := WetherJson.Records.Location[0].WeatherElement[1].Time[0].Parameter.ParameterName
-		minTResult := WetherJson.Records.Location[0].WeatherElement[2].Time[0].Parameter.ParameterName
-		maxTResult := WetherJson.Records.Location[0].WeatherElement[4].Time[0].Parameter.ParameterName
-		feelResult := WetherJson.Records.Location[0].WeatherElement[3].Time[0].Parameter.ParameterName
+		WeatherJson := WeatherJson{}
+		json.Unmarshal([]byte(jsonData), &WeatherJson)
+
+		wetherResult := WeatherJson.Records.Location[0].WeatherElement[0].Time[0].Parameter.ParameterName
+		popResult := WeatherJson.Records.Location[0].WeatherElement[1].Time[0].Parameter.ParameterName
+		minTResult := WeatherJson.Records.Location[0].WeatherElement[2].Time[0].Parameter.ParameterName
+		maxTResult := WeatherJson.Records.Location[0].WeatherElement[4].Time[0].Parameter.ParameterName
+		feelResult := WeatherJson.Records.Location[0].WeatherElement[3].Time[0].Parameter.ParameterName
 
 		fmt.Fprintf(w, r.FormValue("city")+"\n")
 		fmt.Fprintf(w, "天氣:"+wetherResult+"\n")
@@ -97,9 +97,10 @@ func OutputHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "舒適度:"+feelResult+"\n")
 		fmt.Fprintf(w, "降雨機率:"+popResult+"％"+"\n")
 
+		//資料庫
 		r.ParseForm()
 		city := r.FormValue("city")
-		db, err := sql.Open("mysql", "root:abc123@tcp(localhost:3306)/gomysql")
+		db, err := sql.Open("mysql", "root:password@tcp(localhost:3306)/gomysql")
 		if err != nil {
 			panic(err.Error())
 		}
@@ -117,7 +118,7 @@ func OutputHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/input", InputHandler)
 	http.HandleFunc("/output", OutputHandler)
-	err := http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
