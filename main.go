@@ -65,54 +65,53 @@ func OutputHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 		}
-		//天氣api
-		apiUrl := "https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001"
-		token := "your_token"
-		elements := map[string]string{
-			"locationName": r.FormValue("city"),
-			"format":       "JSON",
-		}
-		res, err := http.Get(apiUrl + "?Authorization=" + token + "&locationName=" + elements["locationName"] + "&format=" + elements["format"])
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer res.Body.Close()
-		jsonData, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		WeatherJson := WeatherJson{}
-		json.Unmarshal([]byte(jsonData), &WeatherJson)
-
-		wetherResult := WeatherJson.Records.Location[0].WeatherElement[0].Time[0].Parameter.ParameterName
-		popResult := WeatherJson.Records.Location[0].WeatherElement[1].Time[0].Parameter.ParameterName
-		minTResult := WeatherJson.Records.Location[0].WeatherElement[2].Time[0].Parameter.ParameterName
-		maxTResult := WeatherJson.Records.Location[0].WeatherElement[4].Time[0].Parameter.ParameterName
-		feelResult := WeatherJson.Records.Location[0].WeatherElement[3].Time[0].Parameter.ParameterName
-
-		fmt.Fprintf(w, r.FormValue("city")+"\n")
-		fmt.Fprintf(w, "天氣:"+wetherResult+"\n")
-		fmt.Fprintf(w, "氣溫:"+minTResult+"°C~"+maxTResult+"°C"+"\n")
-		fmt.Fprintf(w, "舒適度:"+feelResult+"\n")
-		fmt.Fprintf(w, "降雨機率:"+popResult+"％"+"\n")
-
-		//資料庫
-		r.ParseForm()
-		city := r.FormValue("city")
-		db, err := sql.Open("mysql", "root:password@tcp(localhost:3306)/gomysql")
-		if err != nil {
-			panic(err.Error())
-		}
-		defer db.Close()
-		insert, err := db.Query("INSERT INTO city VALUES('" + city + "','" + wetherResult + "','" + popResult + "','" + minTResult + "','" + maxTResult + "','" + feelResult + "')")
-		if err != nil {
-			panic(err.Error())
-		}
-		defer insert.Close()
-		fmt.Println("新增資料庫成功!!")
+	}
+	//天氣api
+	apiUrl := "https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001"
+	token := "your_token"
+	elements := map[string]string{
+		"locationName": r.FormValue("city"),
+		"format":       "JSON",
+	}
+	res, err := http.Get(apiUrl + "?Authorization=" + token + "&locationName=" + elements["locationName"] + "&format=" + elements["format"])
+	if err != nil {
+	log.Fatal(err)
+	}
+	defer res.Body.Close()
+	jsonData, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	WeatherJson := WeatherJson{}
+	json.Unmarshal([]byte(jsonData), &WeatherJson)
+
+	wetherResult := WeatherJson.Records.Location[0].WeatherElement[0].Time[0].Parameter.ParameterName
+	popResult := WeatherJson.Records.Location[0].WeatherElement[1].Time[0].Parameter.ParameterName
+	minTResult := WeatherJson.Records.Location[0].WeatherElement[2].Time[0].Parameter.ParameterName
+	maxTResult := WeatherJson.Records.Location[0].WeatherElement[4].Time[0].Parameter.ParameterName
+	feelResult := WeatherJson.Records.Location[0].WeatherElement[3].Time[0].Parameter.ParameterName
+
+	fmt.Fprintf(w, r.FormValue("city")+"\n")
+	fmt.Fprintf(w, "天氣:"+wetherResult+"\n")
+	fmt.Fprintf(w, "氣溫:"+minTResult+"°C~"+maxTResult+"°C"+"\n")
+	fmt.Fprintf(w, "舒適度:"+feelResult+"\n")
+	fmt.Fprintf(w, "降雨機率:"+popResult+"％"+"\n")
+
+	//資料庫
+	r.ParseForm()
+	city := r.FormValue("city")
+	db, err := sql.Open("mysql", "root:password@tcp(localhost:3306)/gomysql")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+	insert, err := db.Query("INSERT INTO city VALUES('" + city + "','" + wetherResult + "','" + popResult + "','" + minTResult + "','" + maxTResult + "','" + feelResult + "')")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer insert.Close()
+	fmt.Println("新增資料庫成功!!")
 }
 
 func main() {
